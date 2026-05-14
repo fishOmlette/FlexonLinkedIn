@@ -1,0 +1,74 @@
+#linkedin-flex-floating-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    padding: 8px 12px 8px 8px;
+    border: 2px solid #333;
+    border-radius: 100px; /* Perfect pill */
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+    font-family: 'Architects Daughter', cursive;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    user-select: none;
+}
+
+#linkedin-flex-floating-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 6px 6px 0px rgba(0,0,0,0.15);
+}
+
+#linkedin-flex-floating-container:active {
+    transform: translateY(-2px);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
+
+#linkedin-flex-floating-container.solving {
+    border-color: #f59e0b;
+}
+
+#linkedin-flex-floating-container.solved {
+    border-color: #10b981;
+}
+
+#linkedin-flex-floating-container.failed {
+    border-color: #ef4444;
+}
+
+.sketchy-face {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    background: #f8f8f8;
+    border-radius: 50%;
+    padding: 4px;
+    border: 1px solid #ddd;
+    pointer-events: none;
+}
+
+.sketchy-solve-btn {
+    padding: 6px 18px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    cursor: inherit;
+    pointer-events: none;
+}
+
+/* Page Highlights */
+.linkedin-flex-highlight {
+    outline: 3px solid #22c55e !important;
+    background-color: rgba(34, 197, 94, 0.2) !important;
+}
+
+.linkedin-flex-solved {
+    color: #38bdf8 !important;
+    font-weight: bold !important;
+}

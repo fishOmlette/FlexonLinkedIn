@@ -1,0 +1,138 @@
+:root {
+    --bg-color: #fff;
+    --text-color: #333;
+    --accent-color: #333;
+    --sketchy-border: 2px solid #333;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 280px;
+    font-family: 'Architects Daughter', cursive;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 16px;
+    line-height: 1.2;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+header {
+    border-bottom: var(--sketchy-border);
+    padding-bottom: 12px;
+}
+
+.header-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-container {
+    width: 48px;
+    height: 48px;
+    border: var(--sketchy-border);
+    border-radius: 45% 55% 50% 50% / 55% 50% 50% 45%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.logo {
+    width: 80%;
+    height: 80%;
+}
+
+.title-container h1 {
+    font-size: 1.2rem;
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.tagline {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: #666;
+}
+
+main {
+    padding: 4px 0;
+}
+
+.games-section h3 {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #444;
+}
+
+.games-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+
+.games-grid span {
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+footer {
+    border-top: var(--sketchy-border);
+    padding-top: 8px;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+}
+
+.footer-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    font-size: 0.7rem;
+    color: #888;
+}
+
+.version::after {
+    content: "•";
+    margin-left: 6px;
+    opacity: 0.5;
+}
+
+.version {
+    font-weight: bold;
+}
+
+.motto {
+    font-style: italic;
+}
+
+.report-link {
+    font-size: 0.75rem;
+    color: #333;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.report-link:hover {
+    color: #000;
+}
