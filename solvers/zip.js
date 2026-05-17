@@ -20,6 +20,43 @@ export async function solve() {
         return false;
     }
 }
+function getCellWalls(cellEl) {
+    const walls = { top: false, right: false, bottom: false, left: false };
+    if (!cellEl) return walls;
+
+    const isBorder = (val) => {
+        if (!val || !val.includes('solid')) return false;
+        const match = val.match(/^(\d+)px/);
+        if (!match) return false;
+        const width = parseInt(match[1], 10);
+        return width >= 6;
+    };
+
+    const descendants = Array.from(cellEl.querySelectorAll('*'));
+    for (const el of descendants) {
+        const style = window.getComputedStyle(el);
+        const afterStyle = window.getComputedStyle(el, '::after');
+
+        const checkBorder = (s) => {
+            return {
+                top: isBorder(s.borderTop),
+                right: isBorder(s.borderRight),
+                bottom: isBorder(s.borderBottom),
+                left: isBorder(s.borderLeft)
+            };
+        };
+
+        const elementBorders = checkBorder(style);
+        const afterBorders = checkBorder(afterStyle);
+
+        walls.top = walls.top || elementBorders.top || afterBorders.top;
+        walls.right = walls.right || elementBorders.right || afterBorders.right;
+        walls.bottom = walls.bottom || elementBorders.bottom || afterBorders.bottom;
+        walls.left = walls.left || elementBorders.left || afterBorders.left;
+    }
+
+    return walls;
+}
 
 function parseBoard() {
     const workspace = document.querySelector('main#workspace');
@@ -63,7 +100,7 @@ function parseBoard() {
             clues.set(value, idx);
         }
 
-        grid[idx] = { el, idx, row, col, value };
+        grid[idx] = { el, idx, row, col, value, walls: getCellWalls(el) };
     });
 
     console.log(`Flex on LinkedIn: Parsed ${rows}x${cols} grid with ${clues.size} clues.`);
@@ -77,13 +114,43 @@ function findPath(board) {
     const maxClue = Math.max(...clues.keys());
 
     function getNeighbors(idx) {
-        const r = Math.floor(idx / cols);
-        const c = idx % cols;
+        const cell = grid[idx];
+        const r = cell.row;
+        const c = cell.col;
         const neighbors = [];
-        if (r > 0) neighbors.push(idx - cols);
-        if (r < rows - 1) neighbors.push(idx + cols);
-        if (c > 0) neighbors.push(idx - 1);
-        if (c < cols - 1) neighbors.push(idx + 1);
+
+        // Top neighbor
+        if (r > 0) {
+            const nextIdx = idx - cols;
+            const neighbor = grid[nextIdx];
+            if (!cell.walls.top && !neighbor.walls.bottom) {
+                neighbors.push(nextIdx);
+            }
+        }
+        // Bottom neighbor
+        if (r < rows - 1) {
+            const nextIdx = idx + cols;
+            const neighbor = grid[nextIdx];
+            if (!cell.walls.bottom && !neighbor.walls.top) {
+                neighbors.push(nextIdx);
+            }
+        }
+        // Left neighbor
+        if (c > 0) {
+            const nextIdx = idx - 1;
+            const neighbor = grid[nextIdx];
+            if (!cell.walls.left && !neighbor.walls.right) {
+                neighbors.push(nextIdx);
+            }
+        }
+        // Right neighbor
+        if (c < cols - 1) {
+            const nextIdx = idx + 1;
+            const neighbor = grid[nextIdx];
+            if (!cell.walls.right && !neighbor.walls.left) {
+                neighbors.push(nextIdx);
+            }
+        }
         return neighbors;
     }
 

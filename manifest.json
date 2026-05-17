@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Flex on LinkedIn",
   "version": "0.1.0",
-  "description": "The ultimate companion for LinkedIn daily games. Puzzle solver when your minds a mess, never stop to flex on linkedin.",
+  "description": "Companion for LinkedIn daily games.",
   "permissions": ["activeTab", "scripting"],
   "action": {
     "default_popup": "popup.html",

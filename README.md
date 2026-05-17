@@ -1,36 +1,39 @@
-# Flex on LinkedIn 🚀
+<p align="center">
+  <img src="assets/banner.svg" alt="Flex on LinkedIn Banner" width="100%">
+</p>
 
-Flex on LinkedIn is a premium Chrome extension designed to help you solve LinkedIn daily games (Queens, Mini Sudoku, and more) with ease.
+<p align="center">
+  <a href="https://github.com/fishOmlette/FlexonLinkedIn/actions"><img src="https://img.shields.io/github/actions/workflow/status/fishOmlette/FlexonLinkedIn/ci.yml?branch=main&style=flat-square&color=38bdf8" alt="Build Status"></a>
+  <a href="https://github.com/fishOmlette/FlexonLinkedIn/releases"><img src="https://img.shields.io/github/v/release/fishOmlette/FlexonLinkedIn?style=flat-square&color=38bdf8" alt="Version"></a>
+  <a href="https://github.com/fishOmlette/FlexonLinkedIn/blob/main/LICENSE"><img src="https://img.shields.io/github/license/fishOmlette/FlexonLinkedIn?style=flat-square&color=38bdf8" alt="License"></a>
+  <a href="https://github.com/fishOmlette/FlexonLinkedIn/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square&color=38bdf8" alt="PRs Welcome"></a>
+</p>
 
-## Features
+---
 
-- **Auto-Detection**: Automatically detects which game you are playing.
-- **Smart Solvers**: Uses optimized algorithms (Backtracking) to solve puzzles instantly.
-- **Floating UI**: Injects a "Solve Game" button directly into the LinkedIn interface for quick access.
-- **Premium Design**: A sleek, modern popup with a dark-themed aesthetic.
+### Companion for LinkedIn daily games (Queens, Sudoku, Zip, Patches, Tango) — puzzle solver when your mind's a mess.
 
-## Supported Games
+<p align="center">
+  <img src="assets/marketing.png" alt="Flex on LinkedIn Preview" width="100%">
+</p>
 
-- ✅ **Queens**
-- ✅ **Mini Sudoku**
-- 🚧 **Patches** (Coming Soon)
-- 🚧 **Tango** (Coming Soon)
+## 🎮 Supported Games
+* 👑 **Queens** (Backtracking Solver)
+* 🔢 **Mini Sudoku** (Backtracking Grid Solver)
+* ⚡ **Zip** (Wall-Aware Hamiltonian Path Finder)
+* 🧩 **Patches** (Backtracking Shape Packer)
+* ☀️ **Tango** (Balanced Sun/Moon Constraint Solver)
 
-## How to Install
+## 🚀 Getting Started
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/fishOmlette/FlexonLinkedIn.git
+   ```
+2. Go to `chrome://extensions/` in Google Chrome, enable **Developer mode**, and click **Load unpacked**.
+3. Select this folder to install the extension.
+4. Navigate to [LinkedIn Games](https://www.linkedin.com/games/), open a game, and click the floating **✨ Solve** button in the bottom right corner!
 
-1. Download or clone this repository.
-2. Open Google Chrome and navigate to `chrome://extensions/`.
-3. Enable **Developer mode** (toggle in the top right).
-4. Click **Load unpacked**.
-5. Select the `LinkedinFlex` folder.
+---
 
-## How to Use
-
-1. Navigate to [LinkedIn Games](https://www.linkedin.com/games/).
-2. Open a supported game (e.g., Queens).
-3. Click the floating **✨ Solve Game** button in the bottom right corner.
-4. Alternatively, click the **LinkedinFlex** extension icon in your browser toolbar and click **Solve Current Game**.
-
-## Disclaimer
-
-This extension is for educational and entertainment purposes. Use it responsibly!
+## 📝 Disclaimer
+This extension is created strictly for educational and entertainment purposes. Use it responsibly and enjoy flexing! 🚀
