@@ -7,7 +7,7 @@
 
 ---
 
-### Companion for LinkedIn daily games (Queens, Sudoku, Zip, Patches, Tango) — puzzle solver when your mind's a mess.
+### Companion for LinkedIn daily games (✏️Sudoku, 👑Queens, 🧩Patches, ⚡Zip, 💃Tango).
 
 <p align="center">
   <img src="assets/marketing.png" alt="Flex on LinkedIn Preview" width="100%">
@@ -15,10 +15,10 @@
 
 ## 🎮 Supported Games
 * 👑 **Queens** (Backtracking Solver)
-* 🔢 **Mini Sudoku** (Backtracking Grid Solver)
+* ✏️ **Mini Sudoku** (Backtracking Grid Solver)
 * ⚡ **Zip** (Wall-Aware Hamiltonian Path Finder)
 * 🧩 **Patches** (Backtracking Shape Packer)
-* ☀️ **Tango** (Balanced Sun/Moon Constraint Solver)
+* 💃 **Tango** (Balanced Sun/Moon Constraint Solver)
 
 ## 🚀 Getting Started
 1. **Clone this repository**:
