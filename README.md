@@ -1,7 +1,7 @@
 # Flex on LinkedIn 🚀
 
 <p align="left">
-  <img src="https://img.shields.io/badge/version-v0.1.0-38bdf8?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-v0.2605.1-38bdf8?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/status-active-38bdf8?style=flat-square" alt="Status">
 </p>
 

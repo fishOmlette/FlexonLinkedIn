@@ -7,6 +7,65 @@ export async function solve() {
             return false;
         }
 
+        // Try leaked solution (V1) first
+        const leaked = tryGetLeakedSolution();
+        if (leaked && Array.isArray(leaked) && leaked.length === board.size) {
+            // Validate mathematical correctness of leaked solution to avoid applying stale payload from previous SPA sessions
+            let isValidLeaked = true;
+            const size = board.size;
+            
+            const seenRows = new Set();
+            const seenCols = new Set();
+            const seenRegions = new Set();
+            
+            for (const q of leaked) {
+                if (!q || typeof q.row !== 'number' || typeof q.col !== 'number') {
+                    isValidLeaked = false;
+                    break;
+                }
+                if (q.row < 0 || q.row >= size || q.col < 0 || q.col >= size) {
+                    isValidLeaked = false;
+                    break;
+                }
+                if (seenRows.has(q.row) || seenCols.has(q.col)) {
+                    isValidLeaked = false;
+                    break;
+                }
+                seenRows.add(q.row);
+                seenCols.add(q.col);
+                
+                const cell = board.cells.find(c => c.row === q.row && c.col === q.col);
+                if (!cell || seenRegions.has(cell.regionId)) {
+                    isValidLeaked = false;
+                    break;
+                }
+                seenRegions.add(cell.regionId);
+            }
+            
+            if (isValidLeaked) {
+                for (let i = 0; i < leaked.length; i++) {
+                    for (let j = i + 1; j < leaked.length; j++) {
+                        const q1 = leaked[i];
+                        const q2 = leaked[j];
+                        if (Math.abs(q1.row - q2.row) <= 1 && Math.abs(q1.col - q2.col) <= 1) {
+                            isValidLeaked = false;
+                            break;
+                        }
+                    }
+                    if (!isValidLeaked) break;
+                }
+            }
+
+            if (isValidLeaked) {
+                console.log('[Flex on LinkedIn] Valid leaked solution found!', leaked);
+                await applySolution(leaked, board.cells);
+                return true;
+            } else {
+                console.warn('[Flex on LinkedIn] Leaked Queens solution invalid or conflicts with board. Falling back to backtracking solver.');
+            }
+        }
+
+        console.log('[Flex on LinkedIn] Leaked solution not found or empty. Running backtracking solver...');
         const solution = findSolution(board);
         if (solution) {
             await applySolution(solution, board.cells);
@@ -20,6 +79,30 @@ export async function solve() {
         return false;
     }
 }
+
+function tryGetLeakedSolution() {
+    try {
+        const script = document.getElementById('rehydrate-data');
+        if (!script || !script.textContent) return null;
+        
+        const content = script.textContent;
+        const indicator = '\\"solution\\"';
+        const anchor = content.indexOf(indicator);
+        if (anchor < 0) return null;
+        
+        const start = content.indexOf('[', anchor + indicator.length);
+        const end = content.indexOf(']', start);
+        if (start < 0 || end < 0) return null;
+        
+        const substring = content.substring(start, end + 1);
+        const parsed = JSON.parse(substring.replaceAll('\\', ''));
+        return parsed;
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to extract leaked solution:', e);
+        return null;
+    }
+}
+
 
 function parseBoard() {
     const workspace = document.querySelector('main#workspace') || document.querySelector('.queens-grid');

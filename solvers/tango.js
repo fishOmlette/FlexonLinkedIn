@@ -8,6 +8,44 @@ export async function solve() {
         }
 
         console.log('[Flex on LinkedIn] Parsed board:', board);
+
+        // Try leaked solution (V1) first
+        const leaked1D = tryGetLeakedSolution();
+        if (leaked1D && Array.isArray(leaked1D) && leaked1D.length === board.size * board.size) {
+            // Check conflicts with fixed cells to avoid applying stale solutions from previous games
+            let hasConflict = false;
+            for (let i = 0; i < leaked1D.length; i++) {
+                const r = Math.floor(i / board.size);
+                const c = i % board.size;
+                const val = leaked1D[i];
+                if (val === null) {
+                    hasConflict = true;
+                    break;
+                }
+                if (board.fixed[r][c] && board.grid[r][c] !== val) {
+                    hasConflict = true;
+                    break;
+                }
+            }
+
+            if (!hasConflict) {
+                console.log('[Flex on LinkedIn] Valid leaked 1D solution found!', leaked1D);
+                const size = board.size;
+                const solution2D = Array.from({ length: size }, () => Array(size).fill(null));
+                for (let i = 0; i < leaked1D.length; i++) {
+                    const r = Math.floor(i / size);
+                    const c = i % size;
+                    solution2D[r][c] = leaked1D[i];
+                }
+                console.log('[Flex on LinkedIn] Applying leaked solution:', solution2D);
+                await applySolution(solution2D, board);
+                return true;
+            } else {
+                console.warn('[Flex on LinkedIn] Leaked solution invalid or has conflicts. Falling back to local solver.');
+            }
+        }
+
+        console.log('[Flex on LinkedIn] Leaked solution not found or empty. Running local solver...');
         const solution = findSolution(board);
         
         if (solution) {
@@ -24,53 +62,138 @@ export async function solve() {
     }
 }
 
+function tryGetLeakedSolution() {
+    try {
+        const script = document.getElementById('rehydrate-data');
+        if (!script || !script.textContent) return null;
+        
+        const content = script.textContent;
+        const indicator = '\\"solution\\"';
+        const anchor = content.indexOf(indicator);
+        if (anchor < 0) return null;
+        
+        const start = content.indexOf('[', anchor + indicator.length);
+        const end = content.indexOf(']', start);
+        if (start < 0 || end < 0) return null;
+        
+        const substring = content.substring(start, end + 1);
+        const raw = JSON.parse(substring.replaceAll('\\', ''));
+        if (!Array.isArray(raw)) return null;
+        
+        return raw.map(x => {
+            if (x === 'LotkaCellValue_ZERO' || x === 0) return 0; // Sun
+            if (x === 'LotkaCellValue_ONE' || x === 1) return 1;  // Moon
+            return null;
+        });
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to extract leaked solution:', e);
+        return null;
+    }
+}
+
+function getPresetCellIndexes() {
+    try {
+        const script = document.getElementById('rehydrate-data');
+        if (!script || !script.textContent) return null;
+        
+        const content = script.textContent;
+        const indicator = '\\"presetCellIdxes\\"';
+        const anchor = content.indexOf(indicator);
+        if (anchor < 0) return null;
+        
+        const start = content.indexOf('[', anchor + indicator.length);
+        const end = content.indexOf(']', start);
+        if (start < 0 || end < 0) return null;
+        
+        const substring = content.substring(start, end + 1);
+        const parsed = JSON.parse(substring.replaceAll('\\', ''));
+        return Array.isArray(parsed) ? new Set(parsed) : null;
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to extract preset cell indexes:', e);
+        return null;
+    }
+}
+
 function parseBoard() {
-    const gridContainer = document.querySelector('[data-testid="interactive-grid"]');
+    const gridContainer = document.querySelector('[data-testid="interactive-grid"]') || document.querySelector('[class*="interactive-grid"]') || document.querySelector('.lotka-grid') || document.querySelector('main');
     if (!gridContainer) {
         console.error('Interactive grid not found');
         return null;
     }
 
-    const cellElements = Array.from(gridContainer.querySelectorAll('div[id^="tango-cell-"]'));
+    const cellElements = Array.from(gridContainer.querySelectorAll('[data-cell-idx], div[id^="tango-cell-"], div[class*="cell"]'));
     if (cellElements.length === 0) {
         console.error('No cells found');
         return null;
     }
 
-    // Grid size from style or count
-    const totalCells = cellElements.length;
+    // Extract unique cells with indices robustly
+    const parsedCells = [];
+    cellElements.forEach((el) => {
+        let idx = null;
+        const cellIdxAttr = el.getAttribute('data-cell-idx');
+        if (cellIdxAttr !== null && cellIdxAttr !== undefined) {
+            idx = parseInt(cellIdxAttr);
+        } else {
+            const idMatch = el.id.match(/(?:tango-cell-|cell-)(\d+)/);
+            if (idMatch) idx = parseInt(idMatch[1]);
+        }
+        if (idx !== null && !isNaN(idx)) {
+            // Avoid duplicates if multiple selectors matched the same element
+            if (!parsedCells.some(c => c.idx === idx)) {
+                parsedCells.push({ el, idx });
+            }
+        }
+    });
+
+    if (parsedCells.length === 0) return null;
+
+    // Grid size determination
+    const totalCells = parsedCells.length;
     const size = Math.sqrt(totalCells);
     const grid = Array.from({ length: size }, () => Array(size).fill(null));
     const fixed = Array.from({ length: size }, () => Array(size).fill(false));
     const cells = [];
 
-    cellElements.forEach((el) => {
-        const idMatch = el.id.match(/tango-cell-(\d+)/);
-        if (!idMatch) return;
-        const idx = parseInt(idMatch[1]);
+    // Parse preset cells from hydration payload first as a primary source of truth
+    const presetSet = getPresetCellIndexes();
+
+    parsedCells.forEach(({ el, idx }) => {
         const r = Math.floor(idx / size);
         const c = idx % size;
 
         let val = null;
-        const symbolSvg = el.querySelector('svg[data-testid="cell-one"]');
-        if (symbolSvg) {
-            const label = (symbolSvg.getAttribute('aria-label') || '').toLowerCase();
-            if (label.includes('sun')) val = 0;
-            else if (label.includes('moon')) val = 1;
+        // Search inside cell for any SVG or IMG representation of sun/moon
+        const symbolEl = el.querySelector('svg[aria-label], img[aria-label]') || el.querySelector('svg, img');
+        if (symbolEl) {
+            const label = (symbolEl.getAttribute('aria-label') || '').toLowerCase();
+            const idAttr = (symbolEl.getAttribute('id') || '').toLowerCase();
+            const testId = (symbolEl.getAttribute('data-testid') || '').toLowerCase();
+            
+            if (label.includes('sun') || idAttr.includes('sun') || testId.includes('sun')) {
+                val = 0; // Sun
+            } else if (label.includes('moon') || idAttr.includes('moon') || testId.includes('moon')) {
+                val = 1; // Moon
+            }
         }
         
         grid[r][c] = val;
-        // ONLY mark as fixed if it's disabled (official pre-placed piece)
-        fixed[r][c] = el.getAttribute('aria-disabled') === 'true';
+
+        // Determine if preset (fixed cell)
+        const isPreset = presetSet ? presetSet.has(idx) : (
+            el.getAttribute('aria-disabled') === 'true' || 
+            el.classList.contains('lotka-cell--locked') || 
+            el.classList.contains('locked') || 
+            el.hasAttribute('disabled')
+        );
+
+        fixed[r][c] = isPreset;
         cells.push({ el, r, c });
     });
 
     // Parse constraints
     const constraints = [];
-    cellElements.forEach((el) => {
-        const idMatch = el.id.match(/tango-cell-(\d+)/);
-        if (!idMatch) return;
-        const idx = parseInt(idMatch[1]);
+    parsedCells.forEach(({ el, idx }) => {
         const r = Math.floor(idx / size);
         const c = idx % size;
 
@@ -78,9 +201,18 @@ function parseBoard() {
         const svgs = el.querySelectorAll('svg');
         
         svgs.forEach(svg => {
-            const testId = svg.getAttribute('data-testid');
-            if (testId === 'edge-equal' || testId === 'edge-cross') {
-                const type = testId === 'edge-equal' ? 'equal' : 'cross';
+            const testId = (svg.getAttribute('data-testid') || '').toLowerCase();
+            const ariaLabel = (svg.getAttribute('aria-label') || '').toLowerCase();
+            const classList = Array.from(svg.classList || []).join(' ').toLowerCase();
+
+            let type = null;
+            if (testId.includes('equal') || ariaLabel.includes('equal') || classList.includes('equal')) {
+                type = 'equal';
+            } else if (testId.includes('cross') || testId.includes('x') || ariaLabel.includes('cross') || ariaLabel.includes('x') || classList.includes('cross')) {
+                type = 'cross';
+            }
+
+            if (type) {
                 const svgRect = svg.getBoundingClientRect();
                 
                 // Relative position to cell center
@@ -201,7 +333,52 @@ async function robustClick(element) {
     }
 }
 
+async function resetBoard(board) {
+    try {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        const resetBtn = buttons.find(btn => {
+            const text = btn.innerText.toLowerCase();
+            return text.includes('reset') || btn.getAttribute('data-testid')?.includes('reset') || btn.getAttribute('aria-label')?.toLowerCase().includes('reset');
+        });
+        if (resetBtn) {
+            console.log('[Flex on LinkedIn] Reset button found! Clicking it...');
+            await robustClick(resetBtn);
+            await new Promise(r => setTimeout(r, 300));
+        } else {
+            console.log('[Flex on LinkedIn] Reset button not found, falling back to manual cell clicking.');
+            for (let r = 0; r < board.size; r++) {
+                for (let c = 0; c < board.size; c++) {
+                    if (board.fixed[r][c]) continue;
+                    
+                    const cellInfo = board.cells.find(cell => cell.r === r && cell.c === c);
+                    if (!cellInfo) continue;
+                    
+                    // Click until blank
+                    let maxClicks = 3;
+                    while (maxClicks-- > 0) {
+                        const symbolEl = cellInfo.el.querySelector('svg[aria-label], img[aria-label]') || cellInfo.el.querySelector('svg, img');
+                        let currentVal = null;
+                        if (symbolEl && symbolEl.getAttribute('aria-label')) {
+                            const label = (symbolEl.getAttribute('aria-label') || '').toLowerCase();
+                            if (label.includes('sun')) currentVal = 0;
+                            else if (label.includes('moon')) currentVal = 1;
+                        }
+                        if (currentVal === null) break;
+                        await robustClick(cellInfo.el);
+                        await new Promise(r => setTimeout(r, 50));
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to reset board:', e);
+    }
+}
+
 async function applySolution(solution, board) {
+    console.log('[Flex on LinkedIn] Resetting the board to clear old drawings...');
+    await resetBoard(board);
+
     for (let r = 0; r < board.size; r++) {
         for (let c = 0; c < board.size; c++) {
             if (board.fixed[r][c]) continue;
@@ -211,28 +388,17 @@ async function applySolution(solution, board) {
                 const cellInfo = board.cells.find(cell => cell.r === r && cell.c === c);
                 if (!cellInfo) continue;
 
-                // Current state
-                let currentVal = null;
-                const symbolSvg = cellInfo.el.querySelector('svg[data-testid="cell-one"]');
-                if (symbolSvg) {
-                    const label = (symbolSvg.getAttribute('aria-label') || '').toLowerCase();
-                    if (label.includes('sun')) currentVal = 0;
-                    else if (label.includes('moon')) currentVal = 1;
-                }
-
-                // Cycle: Empty -> 0 (Sun) -> 1 (Moon) -> Empty
+                // Cycle starting from Empty: Click 1 time for Sun, 2 times for Moon
                 let clicksNeeded = 0;
-                if (currentVal === null) {
-                    clicksNeeded = targetVal === 0 ? 1 : 2;
-                } else if (currentVal === 0) {
-                    clicksNeeded = targetVal === 1 ? 1 : 2;
-                } else if (currentVal === 1) {
-                    clicksNeeded = targetVal === 0 ? 2 : 0;
+                if (targetVal === 0) {
+                    clicksNeeded = 1;
+                } else if (targetVal === 1) {
+                    clicksNeeded = 2;
                 }
 
                 for (let i = 0; i < clicksNeeded; i++) {
                     await robustClick(cellInfo.el);
-                    await new Promise(r => setTimeout(r, 50));
+                    await new Promise(r => setTimeout(r, 80));
                 }
                 
                 cellInfo.el.style.outline = '2px solid #22c55e';

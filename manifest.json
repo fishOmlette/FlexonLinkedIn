@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Flex on LinkedIn",
-  "version": "0.1.0",
+  "version": "0.2605.1",
   "description": "Companion for LinkedIn daily games.",
   "permissions": ["activeTab", "scripting"],
   "action": {

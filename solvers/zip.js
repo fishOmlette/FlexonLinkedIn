@@ -7,6 +7,92 @@ export async function solve() {
             return false;
         }
 
+        // Try leaked solution (V1) first
+        const leaked = tryGetLeakedSolution();
+        if (leaked && Array.isArray(leaked) && leaked.length === board.totalCells) {
+            // Validate the Hamiltonian path to avoid applying stale payload from previous SPA sessions
+            let isValidLeaked = true;
+            const { grid, clues, cols, totalCells } = board;
+            const startIdx = clues.get(1);
+            
+            if (leaked[0] !== startIdx) {
+                isValidLeaked = false;
+            } else {
+                const visited = new Set();
+                let nextTargetClue = 2;
+                
+                for (let i = 0; i < leaked.length; i++) {
+                    const idx = leaked[i];
+                    if (idx === undefined || idx < 0 || idx >= totalCells || visited.has(idx)) {
+                        isValidLeaked = false;
+                        break;
+                    }
+                    visited.add(idx);
+                    
+                    const cell = grid[idx];
+                    
+                    // Verify correct clue order
+                    if (cell.value !== null && cell.value > 1) {
+                        if (cell.value === nextTargetClue) {
+                            nextTargetClue++;
+                        } else {
+                            isValidLeaked = false;
+                            break;
+                        }
+                    }
+                    
+                    // Check adjacency and wall blocking with next step in path
+                    if (i < leaked.length - 1) {
+                        const nextIdx = leaked[i + 1];
+                        const nextCell = grid[nextIdx];
+                        if (!nextCell) {
+                            isValidLeaked = false;
+                            break;
+                        }
+                        
+                        const diff = Math.abs(idx - nextIdx);
+                        let adjacent = false;
+                        
+                        if (diff === 1) { // Left/Right
+                            const minCol = Math.min(cell.col, nextCell.col);
+                            const maxCol = Math.max(cell.col, nextCell.col);
+                            if (cell.row === nextCell.row && maxCol - minCol === 1) {
+                                if (idx < nextIdx) { // Right move
+                                    adjacent = !cell.walls.right && !nextCell.walls.left;
+                                } else { // Left move
+                                    adjacent = !cell.walls.left && !nextCell.walls.right;
+                                }
+                            }
+                        } else if (diff === cols) { // Up/Down
+                            const minRow = Math.min(cell.row, nextCell.row);
+                            const maxRow = Math.max(cell.row, nextCell.row);
+                            if (cell.col === nextCell.col && maxRow - minRow === 1) {
+                                if (idx < nextIdx) { // Down move
+                                    adjacent = !cell.walls.bottom && !nextCell.walls.top;
+                                } else { // Up move
+                                    adjacent = !cell.walls.top && !nextCell.walls.bottom;
+                                }
+                            }
+                        }
+                        
+                        if (!adjacent) {
+                            isValidLeaked = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (isValidLeaked) {
+                console.log('[Flex on LinkedIn] Valid leaked solution found!', leaked);
+                await applyPath(leaked, board);
+                return true;
+            } else {
+                console.warn('[Flex on LinkedIn] Leaked Zip path invalid or has wall conflicts. Falling back to pathfinder.');
+            }
+        }
+
+        console.log('[Flex on LinkedIn] Leaked solution not found or empty. Running pathfinding solver...');
         const solution = findPath(board);
         if (solution) {
             await applyPath(solution, board);
@@ -20,6 +106,30 @@ export async function solve() {
         return false;
     }
 }
+
+function tryGetLeakedSolution() {
+    try {
+        const script = document.getElementById('rehydrate-data');
+        if (!script || !script.textContent) return null;
+        
+        const content = script.textContent;
+        const indicator = '\\"solution\\"';
+        const anchor = content.indexOf(indicator);
+        if (anchor < 0) return null;
+        
+        const start = content.indexOf('[', anchor + indicator.length);
+        const end = content.indexOf(']', start);
+        if (start < 0 || end < 0) return null;
+        
+        const substring = content.substring(start, end + 1);
+        const parsed = JSON.parse(substring.replaceAll('\\', ''));
+        return parsed;
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to extract leaked solution:', e);
+        return null;
+    }
+}
+
 function getCellWalls(cellEl) {
     const walls = { top: false, right: false, bottom: false, left: false };
     if (!cellEl) return walls;

@@ -103,24 +103,87 @@ async function robustClick(element) {
     }
 }
 
+async function clearOnboardingPopup() {
+    try {
+        const popup = document.querySelector('.sudoku-under-board-scrim-message') || document.querySelector('[class*="scrim-message"]') || document.querySelector('[class*="popup"]');
+        if (popup) {
+            console.log('[Flex on LinkedIn] Onboarding scrim popup found. Attempting to close it...');
+            const closeBtn = popup.querySelector('button[aria-label*="close" i]') || popup.querySelector('button');
+            if (closeBtn) {
+                await robustClick(closeBtn);
+                await new Promise(r => setTimeout(r, 300));
+                console.log('[Flex on LinkedIn] Popup closed.');
+            }
+        }
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to clear annoying onboarding popup:', e);
+    }
+}
+
+async function disableNotesMode() {
+    try {
+        const controls = document.querySelector('.sudoku-under-board-controls-container') || document.querySelector('[class*="controls-container"]');
+        if (controls) {
+            const notesToggle = controls.querySelector('[aria-label*="notes" i]') || controls.querySelector('div[class*="notes"]');
+            const notesStatusSpan = controls.querySelector('span');
+            
+            if (notesToggle && notesStatusSpan) {
+                const statusText = notesStatusSpan.textContent.trim().toLowerCase();
+                if (statusText === 'on' || statusText.includes('on')) {
+                    console.log('[Flex on LinkedIn] Notes mode is ON. Turning it OFF...');
+                    await robustClick(notesToggle);
+                    await new Promise(r => setTimeout(r, 200));
+                    console.log('[Flex on LinkedIn] Notes mode turned OFF.');
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to disable Notes mode:', e);
+    }
+}
+
+async function resetBoard() {
+    try {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        const resetBtn = buttons.find(btn => {
+            const text = btn.innerText.toLowerCase();
+            return text.includes('reset') || btn.getAttribute('data-testid')?.includes('reset') || btn.getAttribute('aria-label')?.toLowerCase().includes('reset');
+        });
+        if (resetBtn) {
+            console.log('[Flex on LinkedIn] Reset button found! Clicking it...');
+            await robustClick(resetBtn);
+            await new Promise(r => setTimeout(r, 300));
+        }
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to reset Sudoku board:', e);
+    }
+}
+
 async function applySolution(grid, cells) {
+    // 1. Clear onboarding popups/scrims if they block user inputs
+    await clearOnboardingPopup();
+    
+    // 2. Disable Notes mode so numbers are inputted, not pencil marks
+    await disableNotesMode();
+
+    // 3. Reset board to ensure clear workspace
+    await resetBoard();
+    await new Promise(r => setTimeout(r, 200));
+
     console.log('[Flex on LinkedIn] Applying solution...');
 
     for (const cell of cells) {
         try {
             const val = grid[cell.row][cell.col];
-            // Check content inside .sudoku-cell-content or the cell itself
             const contentEl = cell.el.querySelector('.sudoku-cell-content') || cell.el;
             const currentValText = contentEl.innerText.trim();
             const currentVal = parseInt(currentValText) || 0;
             
             if (currentVal === 0) {
-                // Click the cell first to activate it
                 await robustClick(cell.el);
                 await new Promise(r => setTimeout(r, 100));
                 
-                // Find the number button using data-number attribute
-                const btn = document.querySelector(`.sudoku-input-button[data-number="${val}"]`);
+                const btn = document.querySelector(`.sudoku-input-buttons__numbers button[data-number="${val}"], button[data-number="${val}"], .sudoku-input-button[data-number="${val}"]`);
                 if (btn) {
                     await robustClick(btn);
                     await new Promise(r => setTimeout(r, 150));

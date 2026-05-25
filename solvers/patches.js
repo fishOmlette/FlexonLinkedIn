@@ -22,61 +22,81 @@ export async function solve() {
 }
 
 function parseBoard() {
-    const workspace = document.querySelector('main#workspace');
+    const workspace = document.querySelector('main#workspace') || document.querySelector('.patches-grid') || document.querySelector('main');
     if (!workspace) return null;
 
     const cellElements = Array.from(workspace.querySelectorAll('[data-testid^="cell-"]'));
     if (cellElements.length === 0) return null;
 
-    let maxRow = 0, maxCol = 0;
-    const cellsRaw = [];
-
+    // Map cells to their numerical index in data-testid to avoid relying on aria-label coordinates
+    const parsedCells = [];
+    let maxIdx = -1;
+    
     cellElements.forEach((el) => {
-        const ariaLabel = el.getAttribute('aria-label') || '';
-        const coordMatch = ariaLabel.match(/Row\s+(\d+),\s+column\s+(\d+)/i);
-        if (!coordMatch) return;
-
-        const row = parseInt(coordMatch[1]) - 1;
-        const col = parseInt(coordMatch[2]) - 1;
-        maxRow = Math.max(maxRow, row);
-        maxCol = Math.max(maxCol, col);
-
-        let clue = null;
-        // Check if it's a clue cell (either by aria-label or by presence of clue-number)
-        const clueNumEl = el.querySelector('[data-testid*="clue-number"]');
-        const shapeAttr = el.getAttribute('data-shape');
-
-        if (clueNumEl || ariaLabel.toLowerCase().includes('clue')) {
-            let type = 'freeform';
-            if (shapeAttr) {
-                if (shapeAttr.includes('SQUARE')) type = 'square';
-                else if (shapeAttr.includes('TALL')) type = 'tall rectangle';
-                else if (shapeAttr.includes('WIDE')) type = 'wide rectangle';
-            } else {
-                const typeMatch = ariaLabel.match(/(square|tall rectangle|wide rectangle|freeform)\s+clue/i);
-                if (typeMatch) type = typeMatch[1].toLowerCase();
-            }
-
-            const sizeMatch = ariaLabel.match(/(\d+)\s+cells/i);
-            let targetSize = sizeMatch ? parseInt(sizeMatch[1]) : 0;
-            if (targetSize === 0 && clueNumEl) {
-                targetSize = parseInt(clueNumEl.innerText.trim());
-            }
-            if (isNaN(targetSize)) targetSize = 0;
-            
-            clue = { row, col, type, targetSize };
+        const testId = el.getAttribute('data-testid') || '';
+        const idMatch = testId.match(/cell-(\d+)/);
+        if (idMatch) {
+            const idx = parseInt(idMatch[1]);
+            maxIdx = Math.max(maxIdx, idx);
+            parsedCells.push({ el, idx });
         }
-        cellsRaw.push({ el, row, col, clue });
     });
 
-    const rows = maxRow + 1;
-    const cols = maxCol + 1;
+    if (parsedCells.length === 0) return null;
+
+    // Determine grid rows and columns dynamically
+    const totalCells = maxIdx + 1;
+    const size = Math.sqrt(totalCells);
+    const cols = Math.round(size);
+    const rows = Math.round(totalCells / cols);
+
     const grid = Array(rows).fill(0).map(() => Array(cols).fill(null));
     const clues = [];
 
-    cellsRaw.forEach(c => {
-        grid[c.row][c.col] = c;
-        if (c.clue) clues.push(c.clue);
+    parsedCells.forEach(({ el, idx }) => {
+        const row = Math.floor(idx / cols);
+        const col = idx % cols;
+
+        const ariaLabel = el.getAttribute('aria-label') || '';
+        const clueNumEl = el.querySelector('[data-testid*="clue-number"]');
+        const shapeAttr = el.getAttribute('data-shape');
+
+        // Detect if it is a clue cell
+        const innerTextNum = parseInt(el.innerText.trim());
+        const hasClue = !isNaN(innerTextNum) || clueNumEl || ariaLabel.toLowerCase().includes('clue') || shapeAttr;
+
+        let clue = null;
+        if (hasClue) {
+            let type = 'freeform';
+            const labelLower = ariaLabel.toLowerCase();
+            const shapeAttrLower = (shapeAttr || '').toLowerCase();
+            
+            if (shapeAttrLower.includes('square') || labelLower.includes('square')) {
+                type = 'square';
+            } else if (shapeAttrLower.includes('tall') || labelLower.includes('tall') || labelLower.includes('vertical')) {
+                type = 'tall rectangle';
+            } else if (shapeAttrLower.includes('wide') || labelLower.includes('wide') || labelLower.includes('horizontal')) {
+                type = 'wide rectangle';
+            }
+
+            let targetSize = 0;
+            if (!isNaN(innerTextNum) && innerTextNum > 0) {
+                targetSize = innerTextNum;
+            } else {
+                const sizeMatch = ariaLabel.match(/(\d+)\s+cells/i);
+                if (sizeMatch) {
+                    targetSize = parseInt(sizeMatch[1]);
+                } else if (clueNumEl) {
+                    targetSize = parseInt(clueNumEl.innerText.trim());
+                }
+            }
+            
+            clue = { row, col, type, targetSize };
+        }
+
+        const cellObj = { el, row, col, clue };
+        grid[row][col] = cellObj;
+        if (clue) clues.push(clue);
     });
 
     console.log(`Flex on LinkedIn: Parsed ${rows}x${cols} grid with ${clues.length} clues.`);
@@ -111,7 +131,7 @@ function findSolution(board) {
         const shapes = [];
         const { row, col, type, targetSize } = clue;
         
-        const sizesToTry = targetSize > 0 ? [targetSize] : [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16];
+        const sizesToTry = targetSize > 0 ? [targetSize] : Array.from({ length: rows * cols }, (_, i) => i + 1);
 
         for (const size of sizesToTry) {
             for (let h = 1; h <= size; h++) {
@@ -179,6 +199,49 @@ function findSolution(board) {
     return null;
 }
 
+async function robustClick(element) {
+    if (!element) return;
+    try {
+        const events = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'];
+        for (const name of events) {
+            element.dispatchEvent(new MouseEvent(name, {
+                bubbles: true,
+                cancelable: true,
+                view: window
+            }));
+            await new Promise(r => setTimeout(r, 10));
+        }
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] robustClick failed:', e);
+    }
+}
+
+async function resetBoard(board) {
+    try {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        const resetBtn = buttons.find(btn => {
+            const text = btn.innerText.toLowerCase();
+            return text.includes('reset') || btn.getAttribute('data-testid')?.includes('reset') || btn.getAttribute('aria-label')?.toLowerCase().includes('reset');
+        });
+        if (resetBtn) {
+            console.log('[Flex on LinkedIn] Reset button found! Clicking it...');
+            await robustClick(resetBtn);
+            await new Promise(r => setTimeout(r, 300));
+        } else {
+            console.log('[Flex on LinkedIn] Reset button not found, falling back to manual cell clicking.');
+            for (const clue of board.clues) {
+                const cell = board.grid[clue.row][clue.col];
+                if (cell && cell.el) {
+                    await robustClick(cell.el);
+                    await new Promise(r => setTimeout(r, 50));
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Flex on LinkedIn] Failed to reset board:', e);
+    }
+}
+
 async function simulateDrag(startEl, endEl) {
     if (!startEl || !endEl) return;
     try {
@@ -189,10 +252,11 @@ async function simulateDrag(startEl, endEl) {
         };
 
         const dispatch = (el, type, x, y, extra = {}) => {
-            if (!el) return;
+            const target = el || document.elementFromPoint(x, y) || document.body;
+            if (!target) return;
             const props = { ...common, clientX: x, clientY: y, ...extra };
-            el.dispatchEvent(new PointerEvent('pointer' + type, props));
-            el.dispatchEvent(new MouseEvent('mouse' + type, props));
+            target.dispatchEvent(new PointerEvent('pointer' + type, props));
+            target.dispatchEvent(new MouseEvent('mouse' + type, props));
         };
 
         const start = getCenter(startEl);
@@ -204,13 +268,12 @@ async function simulateDrag(startEl, endEl) {
         await new Promise(r => setTimeout(r, 100));
 
         // intermediate moves for stability
-        const steps = 3;
+        const steps = 4;
         for (let i = 1; i <= steps; i++) {
             const currX = start.x + (end.x - start.x) * (i / steps);
             const currY = start.y + (end.y - start.y) * (i / steps);
-            const target = document.elementFromPoint(currX, currY) || startEl;
-            dispatch(target, 'move', currX, currY);
-            await new Promise(r => setTimeout(r, 50));
+            dispatch(null, 'move', currX, currY);
+            await new Promise(r => setTimeout(r, 40));
         }
 
         dispatch(endEl, 'move', end.x, end.y);
@@ -224,6 +287,9 @@ async function simulateDrag(startEl, endEl) {
 }
 
 async function applySolution(solution, board) {
+    console.log('[Flex on LinkedIn] Resetting the board to clear old drawings...');
+    await resetBoard(board);
+
     console.log(`Flex on LinkedIn: Applying solution with ${solution.length} patches...`);
     
     for (const region of solution) {
@@ -238,7 +304,7 @@ async function applySolution(solution, board) {
         if (corner1 && corner2) {
             console.log(`  Dragging patch from (${minR+1}, ${minC+1}) to (${maxR+1}, ${maxC+1})`);
             await simulateDrag(corner1.el, corner2.el);
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, 400));
         }
     }
 }
