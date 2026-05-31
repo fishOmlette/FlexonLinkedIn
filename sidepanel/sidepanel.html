@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flex Arcade</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+    <div class="container">
+        <!-- SCREEN 1: GAME HUB -->
+        <div id="hub-screen" class="screen active">
+            <header class="hub-header">
+                <div class="logo-container">
+                    <img src="../icons/icon128.png" alt="Logo" class="logo">
+                </div>
+                <div class="title-container">
+                    <h1><img src="../assets/game.svg" class="title-icon" alt="Arcade"> Flex Arcade</h1>
+                    <p class="tagline">play and master daily logic puzzles.</p>
+                </div>
+            </header>
+
+            <!-- Difficulty pill selectors (no header verbiage) -->
+            <section class="difficulty-section">
+                <div class="difficulty-selector">
+                    <button class="diff-btn" data-diff="easy">Easy</button>
+                    <button class="diff-btn active" data-diff="medium">Medium</button>
+                    <button class="diff-btn" data-diff="hard">Hard</button>
+                    <button class="diff-btn" data-diff="expert">Expert</button>
+                </div>
+            </section>
+
+            <!-- 2-Column Game Card Grid (no header verbiage) -->
+            <section class="games-section">
+                <div class="cards-list">
+                    <!-- Sudoku Card -->
+                    <div class="game-card active-card" data-game="sudoku">
+                        <span class="card-emoji">✏️</span>
+                        <div class="card-info">
+                            <h4>Mini Sudoku</h4>
+                        </div>
+                    </div>
+
+                    <!-- Queens Card -->
+                    <div class="game-card active-card" data-game="queens">
+                        <span class="card-emoji">👑</span>
+                        <div class="card-info">
+                            <h4>Queens</h4>
+                        </div>
+                    </div>
+
+                    <!-- Patches Card -->
+                    <div class="game-card locked-card" data-game="patches">
+                        <span class="card-emoji">🧩</span>
+                        <div class="card-info">
+                            <h4>Patches</h4>
+                        </div>
+                        <span class="badge-soon">SOON</span>
+                    </div>
+
+                    <!-- Zip Card -->
+                    <div class="game-card locked-card" data-game="zip">
+                        <span class="card-emoji">⚡</span>
+                        <div class="card-info">
+                            <h4>Zip</h4>
+                        </div>
+                        <span class="badge-soon">SOON</span>
+                    </div>
+
+                    <!-- Tango Card -->
+                    <div class="game-card locked-card" data-game="tango">
+                        <span class="card-emoji">💃</span>
+                        <div class="card-info">
+                            <h4>Tango</h4>
+                        </div>
+                        <span class="badge-soon">SOON</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Seed Input Section -->
+            <section class="seed-section">
+                <div class="seed-input-container">
+                    <input type="text" id="custom-seed-input" class="sketchy-input" placeholder="Enter Seed (e.g. su4829)">
+                    <button id="play-seed-btn" class="sketchy-btn seed-btn">Play Seed</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- SCREEN 2: GAME SCREEN -->
+        <div id="game-screen" class="screen">
+            <header class="game-header">
+                <button id="exit-btn" class="back-btn">⬅</button>
+                <div class="game-meta">
+                    <h2 id="game-title">✏️ Mini Sudoku</h2>
+                    <div class="game-subtitle-container">
+                        <span id="difficulty-badge" class="badge">Medium</span>
+                        <span id="seed-badge" class="seed-badge">su000000</span>
+                        <span id="errors-badge" class="errors-badge">0/3</span>
+                    </div>
+                </div>
+                <div class="timer-container">
+                    <img src="../assets/clock.svg" alt="Timer" class="header-icon">
+                    <span id="timer-text">00:00</span>
+                </div>
+            </header>
+
+            <!-- Game Board Viewport -->
+            <main class="board-viewport">
+                <!-- Board grid dynamically generated here -->
+                <div id="grid-container" class="sketchy-board"></div>
+            </main>
+
+            <!-- Controls (Numbers Keyboard for Sudoku) -->
+            <section id="keyboard-controls" class="controls-section">
+                <div class="number-buttons">
+                    <button class="num-btn" data-val="1">1</button>
+                    <button class="num-btn" data-val="2">2</button>
+                    <button class="num-btn" data-val="3">3</button>
+                    <button class="num-btn" data-val="4">4</button>
+                    <button class="num-btn" data-val="5">5</button>
+                    <button class="num-btn" data-val="6">6</button>
+                    <button class="num-btn delete-btn" data-val="0">⌫</button>
+                </div>
+            </section>
+
+            <!-- Game Actions (Reset & Hint) -->
+            <section class="actions-section">
+                <button id="reset-btn" class="action-btn">
+                    <img src="../assets/cycle.svg" class="btn-icon" alt="Reset"> Reset
+                </button>
+                <button id="hint-btn" class="action-btn">
+                    <img src="../assets/lightbulb.svg" class="btn-icon" alt="Hint"> Hint
+                </button>
+            </section>
+
+            <!-- Game Rules -->
+            <footer class="rules-footer">
+                <div class="rules-header">
+                    <img src="../assets/book.svg" class="btn-icon" alt="Book"> How to Play
+                </div>
+                <p id="game-rules-text">
+                    Every row, column, and bold 2x3 block must contain the numbers 1 through 6 exactly once. Selected cells will highlight in a hand-drawn sketchy green!
+                </p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Script Dependencies -->
+    <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

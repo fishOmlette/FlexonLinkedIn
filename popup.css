@@ -136,3 +136,46 @@ footer {
 .report-link:hover {
     color: #000;
 }
+
+.play-section {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.sketchy-btn {
+    width: 100%;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    background: white;
+    border: var(--sketchy-border);
+    border-radius: 100px; /* Bean / perfect pill shape! */
+    box-shadow: 3px 3px 0px rgba(0,0,0,0.15);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.sketchy-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+    background: #fdfaf6;
+}
+
+.sketchy-btn:active {
+    transform: translateY(1px);
+    box-shadow: 1px 1px 0px rgba(0,0,0,0.1);
+}
+
+.btn-icon {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    display: inline-block;
+}
